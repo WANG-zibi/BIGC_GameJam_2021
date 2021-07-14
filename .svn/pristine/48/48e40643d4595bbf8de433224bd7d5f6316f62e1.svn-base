@@ -1,0 +1,130 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.UI;
+
+public class mainUI : MonoBehaviour
+{
+    public static mainUI instance;
+
+    //界面切换
+    public Button button_Title;
+    public Button button_Tutorial;
+    public GameObject black_Tutorial;
+
+    //主界面
+    public Button Button;
+    public Text text_debug;
+    //下面板
+    public Button button_tempStart;
+    public Button button_Random;
+    //文字显示
+    public NumberDisplay number_Energy;
+    public NumberDisplay number_Score;
+    public NumberDisplay number_round;
+
+    //Window01
+    public Button Window01;
+    public Button button_Window_Continue;
+    public Button button_Window_Shop;
+
+    //Obtained_Animals
+    public Card_Prefab card_Prefab_rabbit;
+    public Card_Prefab card_Prefab_Bees;
+    public Card_Prefab card_Prefab_Worfs;
+
+    private Card_Prefab curPrefab;
+
+    #region Singleton
+    private void CreateSingleton()
+    {
+        if (!instance)
+        {
+            instance = this;
+        }
+        else if (instance != this)
+        {
+            DestroyImmediate(this);
+        }
+    }
+    private void Awake()
+    {
+        CreateSingleton();
+    }
+    #endregion
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        //初始化
+        button_Title.gameObject.SetActive(true);
+        button_Tutorial.gameObject.SetActive(true);
+        Window01.gameObject.SetActive(true);
+        black_Tutorial.SetActive(true);
+
+        //界面切换
+        button_Title.onClick.AddListener(Onclick_Title);
+        button_Tutorial.onClick.AddListener(Onclick_Tutorial);
+        Button.onClick.AddListener(Onclick_test);
+
+        //Window01
+        button_Window_Continue.onClick.AddListener(Onclick_Window_Continue);
+        button_Window_Shop.onClick.AddListener(Onclick_Window_Shop);
+        Window01.gameObject.SetActive(false);
+
+        //GM互动
+        GameManager.instance.randomButtonPressedEvent.AddListener(Disable_Buttons);
+        GameManager.instance.waitForActionEvent.AddListener(Enable_Buttons);
+
+        //Obtained_Animals 初始化
+
+    }
+
+    private void Update()
+    {
+        number_Score.UpdateNumber(GameManager.instance.GetScore());
+        number_Energy.UpdateNumber(GameManager.instance.GetEnergy());
+        number_round.UpdateNumber(GameManager.instance.GetRoundIndex());
+    }
+
+    public void OnMouseOver_Prefab(Card_Prefab card_Prefab)
+    {
+        curPrefab = card_Prefab;
+        text_debug.text = "" + card_Prefab.curType + "\r\n" + card_Prefab.card._state_Hunger;
+    }
+
+    private void Onclick_test()
+    {
+        Window01.gameObject.SetActive(true);
+    }
+    private void Onclick_Title()
+    {
+        button_Title.gameObject.SetActive(false);
+    }
+    private void Onclick_Tutorial()
+    {
+        button_Tutorial.gameObject.SetActive(false);
+        black_Tutorial.SetActive(false);
+    }
+    private void Onclick_Window_Continue()
+    {
+        Window01.gameObject.SetActive(false);
+    }
+    private void Onclick_Window_Shop()
+    {
+        //--------------------------
+        // TODO: 
+        //-------------------------
+    }
+    private void Disable_Buttons()
+    {
+        button_tempStart.interactable = false;
+        button_Random.interactable = false;
+    }
+    private void Enable_Buttons()
+    {
+        button_tempStart.interactable = true;
+        button_Random.interactable = true;
+    }
+}

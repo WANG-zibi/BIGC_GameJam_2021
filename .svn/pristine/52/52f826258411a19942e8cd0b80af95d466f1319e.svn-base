@@ -1,0 +1,84 @@
+﻿using System;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class StageSummary : MonoBehaviour
+{
+    private GameManager gm;
+    public GameObject summaryPanel;
+
+    public Button storeBtn;
+    public Button continueBtn;
+    public Text roundText;
+    public Text scoreText;
+    public Text reductionText;
+    public Text remainingText;
+
+    private int energyReduction;
+
+    private bool debugFlag;
+    private void OnStageSummary()
+    {
+        // Debug.Log("StageSummary.OnStageSummary");
+        energyReduction = gm.GetEnergyReduction();
+        bool success = gm.SpendEnergy(energyReduction);
+        // Game Over
+        if (!success)
+        {
+            gm.gameOverEvent.Invoke();
+        }
+
+        // Show summary UI
+        UpdateSummaryPanel();
+        summaryPanel.SetActive(true);
+    }
+
+    private void UpdateSummaryPanel()
+    {
+        roundText.text = gm.GetRoundIndex().ToString();
+        scoreText.text = gm.GetScore().ToString();
+        reductionText.text = energyReduction.ToString();
+        remainingText.text = gm.GetEnergy().ToString();
+    }
+
+    
+    
+    private void OnStageSummaryExit()
+    {
+        summaryPanel.SetActive(false);
+    }
+
+    
+    public void OnStoreBtnClick()
+    {
+        gm.stageSummaryExitEvent.Invoke();
+        gm.inStoreEvent.Invoke();
+    }
+    
+    public void OnContinueBtnClick()
+    {
+        gm.stageSummaryExitEvent.Invoke();
+        gm.waitForActionEvent.Invoke();
+    }
+    
+    
+    private void Start()
+    {
+        gm = GameManager.instance;
+        gm.stageSummaryEvent.AddListener(OnStageSummary);
+        gm.stageSummaryExitEvent.AddListener(OnStageSummaryExit);
+        summaryPanel.SetActive(false);
+
+        debugFlag = true;
+    }
+
+    private void Update()
+    {
+        // For Debugging
+        // if ((int)(Time.deltaTime * 10000) % 10 == 0 && debugFlag)
+        // {    
+        //     gm.stageSummaryEvent.Invoke();
+        //     debugFlag = false;
+        // }
+    }
+}

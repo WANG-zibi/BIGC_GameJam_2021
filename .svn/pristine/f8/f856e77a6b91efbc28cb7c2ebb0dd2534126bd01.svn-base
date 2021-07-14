@@ -1,0 +1,168 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using UnityEngine.UI;
+using Random = UnityEngine.Random;
+
+public class Store : MonoBehaviour
+{
+    private GameManager gm;
+    public GameObject storePanel;
+
+    public Card_Prefab universalPrefab;
+    public Transform soldOutPrefab;
+    
+    public Type[] storeTypes;
+    private List<Type> remainTypes;
+    public Transform[] cardSlots;
+    public Text[] priceText;
+    // public Transform[] propPrefabs;
+
+    // public Transform propParent;
+    // public List<Card_Prefab> storePrefabs;
+    
+    // these indices count from 1, 0 stand for uninitialized
+    private int[] typeIndicesForSale;
+    private List<Transform> storeCards;
+    
+    
+    private void RemoveObtainedTypesFromStore()
+    {
+        foreach (Type type in remainTypes)
+        {
+            if (gm.CheckObtainedTypes(type))
+            {
+                remainTypes.Remove(type);
+            }
+        }
+    }
+    
+    private void FillTypeIndexByRand(int slotIndex)
+    {
+        if (typeIndicesForSale[slotIndex] == -1)
+        {
+            return;
+        }
+        // Evade duplication
+        int index = Random.Range(1, remainTypes.Count + 1);
+        while (typeIndicesForSale.Contains(index))
+        {
+            // reroll the index
+            index = Random.Range(1, remainTypes.Count + 1);
+        }
+
+        typeIndicesForSale[slotIndex] = index;
+    }
+
+    private void SpawnCards()
+    {
+        RemoveObtainedTypesFromStore();
+        if (remainTypes.Count == 0)
+        {
+            return;
+        }
+
+        if (remainTypes.Count < cardSlots.Length)
+        {
+            FillSoldOutIndices();
+        }
+        for (int i = 0; i < cardSlots.Length; i++)
+        {
+            FillTypeIndexByRand(i);
+            if (typeIndicesForSale[i] == -1)
+            {
+                Instantiate(soldOutPrefab, cardSlots[i].position, Quaternion.identity, transform);
+                priceText[i].text = "";
+            }
+            else
+            {
+                Type type = remainTypes[typeIndicesForSale[i] - 1];
+                Card_Prefab card = Instantiate(universalPrefab, cardSlots[i].position, Quaternion.identity, transform);
+                card.Initialize(type);
+                priceText[i].text = card.price.ToString();
+                if (!gm.CheckEnergy(card.price))
+                {
+                    priceText[i].color = Color.red;
+                }
+                storeCards.Add(card.transform);
+            }
+        }
+        Debug.Log(typeIndicesForSale);
+    }
+
+    private void FillSoldOutIndices()
+    {
+        int count = remainTypes.Count;
+        while (count < cardSlots.Length)
+        {
+            typeIndicesForSale[count] = -1;
+            count++;
+        }
+    }
+
+    private void ClearCards()
+    {
+        foreach (Transform storeCard in storeCards)
+        {
+            if (storeCard)
+            {
+                Destroy(storeCard.gameObject);
+            }
+        }
+    }
+
+    public void OnCardClick(Card_Prefab card)
+    {
+        if (GameManager.instance.SpendEnergy(card.price))
+        {
+            gm.AddObtainedTypes(card.curType);
+            Transform soldOut = Instantiate(soldOutPrefab, card.transform.position, Quaternion.identity, transform);
+            priceText[storeCards.IndexOf(card.transform)].text = "";
+            storeCards.Add(soldOut);
+            Destroy(card.gameObject);
+        }
+        else
+        {
+            // TODO: Inform player insufficient balance 
+            
+        }
+    }
+
+    public void OnContinueBtn()
+    {
+        gm.inStoreExitEvent.Invoke();
+        gm.waitForActionEvent.Invoke();
+    }
+    
+    #region Event Listener
+
+    private void OnInStore()
+    {
+        SpawnCards();
+        storePanel.SetActive(true);
+    }
+    
+    private void OnInStoreExit()
+    {
+        storePanel.SetActive(false);
+        ClearCards();
+    }
+
+    #endregion
+    
+
+    private void Start()
+    {
+        gm = GameManager.instance;
+        gm.inStoreEvent.AddListener(OnInStore);
+        gm.inStoreExitEvent.AddListener(OnInStoreExit);
+        
+        storePanel.SetActive(false);
+
+        
+        remainTypes = new List<Type>(storeTypes);
+        storeCards = new List<Transform>();
+        typeIndicesForSale = new int[cardSlots.Length];
+    }
+}
